@@ -22,7 +22,7 @@ fn solve_part1_inner(input: &[Data]) -> usize {
 
 #[aoc(day1, part2)]
 pub fn solve_part2(input: &[Data]) -> usize {
-    solve_part1_inner(input)
+    solve_part2_inner(input)
 }
 fn solve_part2_inner(input: &[Data]) -> usize {
     unimplemented!()
