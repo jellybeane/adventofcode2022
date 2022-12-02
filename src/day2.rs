@@ -30,7 +30,7 @@ impl PartialOrd for Shape {
 // Rock Paper Scissors
 // "The first column is what your opponent is going to play: A for Rock, B for Paper, and C for Scissors"
 // Second column: X, Y, Z
-type Data = (char, char);
+type Data = (u8, u8);
 #[aoc_generator(day2)]
 pub fn input_generator(input: &str) -> Result<Vec<Data>> {
     input_generator_inner(input)
@@ -42,11 +42,10 @@ fn input_generator_inner(input: &str) -> Result<Vec<Data>> {
         if line.is_empty() { continue; }
         let (left, right) = line.split_once(' ')
             .ok_or(anyhow!("Failed to split"))?;
-        // getting individual chars is not idiomatic Rust and that's why it's awkward
-        // go back to Python if you want that
-        // https://stackoverflow.com/questions/33405672/how-can-i-convert-a-one-element-string-into-a-char
-        let left = left.chars().next().expect("failed to split");
-        let right = right.chars().next().expect("failed to split");
+        // getting individual chars is not idiomatic Rust
+        // bytes are slightly more Rust-y
+        let left = left.as_bytes()[0];
+        let right = right.as_bytes()[0];
         result.push((left,right));
     }
 
@@ -54,19 +53,19 @@ fn input_generator_inner(input: &str) -> Result<Vec<Data>> {
 }
 
 // Part 1 Second column: X Rock, Y Paper, Z Scissors
-fn read_strat_part_1(lines: &[(char, char)]) -> Vec<(Shape, Shape)> {
+fn read_strat_part_1(lines: &[(u8, u8)]) -> Vec<(Shape, Shape)> {
     let mut result = vec![];
     for (left, right) in lines {
         let them = match left {
-            'A' => Shape::Rock,
-            'B' => Shape::Paper,
-            'C' => Shape::Scissors,
+            b'A' => Shape::Rock,
+            b'B' => Shape::Paper,
+            b'C' => Shape::Scissors,
             _ => Shape::Rock, // wait how do I error?
         };
         let me = match right {
-            'X' => Shape::Rock,
-            'Y' => Shape::Paper,
-            'Z' => Shape::Scissors,
+            b'X' => Shape::Rock,
+            b'Y' => Shape::Paper,
+            b'Z' => Shape::Scissors,
             _ => Shape::Rock, // ???
         };
         result.push((them,me));
@@ -76,19 +75,19 @@ fn read_strat_part_1(lines: &[(char, char)]) -> Vec<(Shape, Shape)> {
 
 // Part 2 Second column: how the round needs to end
 // X lose, Y draw, Z win
-fn read_strat_part_2(lines: &[(char, char)]) -> Vec<(Shape, Ordering)> {
+fn read_strat_part_2(lines: &[(u8, u8)]) -> Vec<(Shape, Ordering)> {
     let mut result = vec![];
     for (left, right) in lines {
         let them = match left {
-            'A' => Shape::Rock,
-            'B' => Shape::Paper,
-            'C' => Shape::Scissors,
+            b'A' => Shape::Rock,
+            b'B' => Shape::Paper,
+            b'C' => Shape::Scissors,
             _ => Shape::Rock, // wait how do I error?
         };
         let me = match right {
-            'X' => Ordering::Less,
-            'Y' => Ordering::Equal,
-            'Z' => Ordering::Greater,
+            b'X' => Ordering::Less,
+            b'Y' => Ordering::Equal,
+            b'Z' => Ordering::Greater,
             _ => Ordering::Less, // hmm
         };
         result.push((them,me));
