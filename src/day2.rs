@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use aoc_runner_derive::{aoc, aoc_generator};
 
 use anyhow::Result;
-
+use anyhow::anyhow;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Shape {
@@ -15,23 +15,14 @@ pub enum Shape {
 // I feel like I should've implemented some cyclic thing instead :|
 impl PartialOrd for Shape {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        match self {
-            Shape::Rock => match other {
-                Shape::Rock => Some(Ordering::Equal),
-                Shape::Paper => Some(Ordering::Less),
-                Shape::Scissors => Some(Ordering::Greater),
-            },
-            Shape::Paper => match other {
-                Shape::Rock => Some(Ordering::Greater),
-                Shape::Paper => Some(Ordering::Equal),
-                Shape::Scissors => Some(Ordering::Less),
-            },
-            Shape::Scissors => match other {
-                Shape::Rock => Some(Ordering::Less),
-                Shape::Paper => Some(Ordering::Greater),
-                Shape::Scissors => Some(Ordering::Equal),
-            },
-        }
+        use Shape::*;
+        use Ordering::*;
+        let result = match (self, other) {
+            (Rock, Paper) | (Paper, Scissors) | (Scissors, Rock) => Less,
+            (Rock, Rock) | (Paper, Paper) | (Scissors, Scissors) => Equal,
+            (Rock, Scissors) | (Paper, Rock) | (Scissors, Paper) => Greater,
+        };
+        Some(result)
     }
 }
 
@@ -46,12 +37,16 @@ pub fn input_generator(input: &str) -> Result<Vec<Data>> {
 }
 fn input_generator_inner(input: &str) -> Result<Vec<Data>> {
     let mut result: Vec<Data> = vec![];
+    
     for line in input.lines() {
-        let split: Vec<&str> = line.split(" ").collect();
-        // ??? this feels silly
+        if line.is_empty() { continue; }
+        let (left, right) = line.split_once(' ')
+            .ok_or(anyhow!("Failed to split"))?;
+        // getting individual chars is not idiomatic Rust and that's why it's awkward
+        // go back to Python if you want that
         // https://stackoverflow.com/questions/33405672/how-can-i-convert-a-one-element-string-into-a-char
-        let left = split[0].chars().next().expect("failed to split");
-        let right = split[1].chars().next().expect("failed to split");
+        let left = left.chars().next().expect("failed to split");
+        let right = right.chars().next().expect("failed to split");
         result.push((left,right));
     }
 
@@ -104,6 +99,8 @@ fn read_strat_part_2(lines: &[(char, char)]) -> Vec<(Shape, Ordering)> {
 // I want this to be like the opposite of PartialOrd
 fn my_play(opponent: Shape, outcome: Ordering) -> Shape {
     // loses to -1, ties to 0, wins to +1, mod 3
+    // I was thinking about Java compare when I wrote this
+    // even though I literally just wrote PartialOrd .__.
     let shapevec = vec![Shape::Rock, Shape::Paper, Shape::Scissors];
     let their_index: i32 = match opponent {
         Shape::Rock => 0,
@@ -115,15 +112,11 @@ fn my_play(opponent: Shape, outcome: Ordering) -> Shape {
         Ordering::Equal => their_index,
         Ordering::Greater => their_index + 1,
     };
-    // % doesn't do what I think it does for negative numbers :|
+    // % is negative for negative numbers in rust
     // dbg!(-1%3, 0%3, 1%3, 2%3, 3%3, 4%3);
-    if my_index > 2 {
-        my_index -= 3;
-    }
-    else if my_index < 0 {
-        my_index += 3;
-    }
-
+    if my_index < 0 { my_index += 3; }
+    my_index %= 3;
+    
     //dbg!((their_index, my_index, outcome));
     shapevec[my_index as usize]
 }
@@ -161,6 +154,7 @@ fn solve_part1_inner(input: &[Data]) -> usize {
     score
 }
 
+// choose shape so the round ends as indicated
 #[aoc(day2, part2)]
 pub fn solve_part2(input: &[Data]) -> usize {
     solve_part2_inner(input)

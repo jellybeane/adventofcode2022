@@ -5,4 +5,4 @@ Trying out Rust this year
 Day | Theme | Notes
 ----|-------|-------
 1   |Calorie Counting| Iterators: `sum`, `rev`, `take`  
-2   |Rock Paper Scissors| PartialOrd, match abuse
+2   |Rock Paper Scissors| match statements, Ordering
