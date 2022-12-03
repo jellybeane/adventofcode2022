@@ -1,17 +1,17 @@
-use std::{collections::HashSet, hash::Hash};
+use std::{collections::HashSet};
 
 use aoc_runner_derive::{aoc, aoc_generator};
 
 use anyhow::Result;
 
-type Data = (Vec<u8>, Vec<u8>);
-
-#[aoc_generator(day3)]
-pub fn input_generator(input: &str) -> Result<Vec<Data>> {
-    input_generator_inner(input)
+// Each line represents a rucksack, divided into two equal components
+type Data1 = (Vec<u8>, Vec<u8>);
+#[aoc_generator(day3, part1)]
+pub fn input_generator1(input: &str) -> Result<Vec<Data1>> {
+    input_generator_inner1(input)
 }
-fn input_generator_inner(input: &str) -> Result<Vec<Data>> {
-    let mut result: Vec<Data> = vec![];
+fn input_generator_inner1(input: &str) -> Result<Vec<Data1>> {
+    let mut result: Vec<Data1> = vec![];
     for line in input.lines() {
         let rucksack = line.as_bytes();
         let n = rucksack.len();
@@ -37,10 +37,10 @@ fn to_priority(item: u8) -> u8 {
 // Find the item type that appears in both compartments of each rucksack.
 // What is the sum of the priorities of those item types?
 #[aoc(day3, part1)]
-pub fn solve_part1(input: &[Data]) -> usize {
+pub fn solve_part1(input: &[Data1]) -> usize {
     solve_part1_inner(input)
 }
-fn solve_part1_inner(input: &[Data]) -> usize {
+fn solve_part1_inner(input: &[Data1]) -> usize {
     //dbg!(input);
     let mut total: usize = 0;
     for (left, right) in input {
@@ -54,10 +54,39 @@ fn solve_part1_inner(input: &[Data]) -> usize {
     total
 }
 
+// Each line still represents a rucksack,
+// but they no longer need to be divided
+type Data2 = Vec<u8>;
+#[aoc_generator(day3, part2)]
+pub fn input_generator2(input: &str) -> Result<Vec<Data2>> {
+    input_generator_inner2(input)
+}
+fn input_generator_inner2(input: &str) -> Result<Vec<Data2>> {
+    let result: Vec<Data2> = input.lines()
+        .map(|line| line.as_bytes().to_vec())
+        .collect();
+    Ok(result)
+}
+
+// Every set of three lines is one group of Elves
+// There is one intersection between them
 #[aoc(day3, part2)]
-pub fn solve_part2(input: &[Data]) -> usize {
+pub fn solve_part2(input: &[Data2]) -> usize {
     solve_part2_inner(input)
 }
-fn solve_part2_inner(input: &[Data]) -> usize {
-    unimplemented!()
+fn solve_part2_inner(input: &[Data2]) -> usize {
+    let mut total: usize = 0;
+    // chunks and chunks_exact conveniently do exactly what is needed
+    for elves in input.chunks_exact(3)
+    {
+        let elf0: HashSet<u8> = elves[0].iter().copied().collect();
+        let elf1: HashSet<u8> = elves[1].iter().copied().collect();
+        let elf2: HashSet<u8> = elves[2].iter().copied().collect();
+
+        let intersection0: HashSet<u8> = elf0.intersection(&elf1).copied().collect();
+        // we are told there is only 1 intersection between the 3 elves
+        let badge = intersection0.intersection(&elf2).next().unwrap();
+        total += to_priority(*badge) as usize;
+    }
+    total
 }
