@@ -90,3 +90,30 @@ fn solve_part2_inner(input: &[Data2]) -> usize {
     }
     total
 }
+
+#[cfg(test)]
+mod test {
+    const TEST_INPUT: &'static str =
+r#"vJrwpWtwJgWrhcsFMMfFFhFp
+jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL
+PmmdzqPrVvPwwTWBwg
+wMqvLMZHhHMvwLHjbvcjnnSBnvTQFn
+ttgJtRGJQctTZtZT
+CrZsJsPPZsGzwwsLwLmpwMDw
+"#;
+    #[test]
+    fn test_part1_example() {
+        let input = super::input_generator1(TEST_INPUT).unwrap();
+        let result = super::solve_part1(&input);
+
+        assert_eq!(result, 157);
+    }
+
+    #[test]
+    fn test_part2_example() {
+        let input = super::input_generator2(TEST_INPUT).unwrap();
+        let result = super::solve_part2(&input);
+
+        assert_eq!(result, 70);
+    }
+}
