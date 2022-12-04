@@ -4,6 +4,8 @@ use anyhow::Result;
 
 type Data = ((usize, usize),(usize, usize));
 
+// Each line represents two intervals
+// A-B,C=D
 #[aoc_generator(day4)]
 pub fn input_generator(input: &str) -> Result<Vec<Data>> {
     input_generator_inner(input)
@@ -29,14 +31,12 @@ pub fn solve_part1(input: &[Data]) -> usize {
     solve_part1_inner(input)
 }
 fn solve_part1_inner(input: &[Data]) -> usize {
-    let mut counter = 0;
-    for pair in input {
-        let ((left0, left1), (right0, right1)) = pair;
-        if (left0 <= right0 && left1 >= right1) || (right0 <= left0 && right1 >= left1) {
-            counter += 1;
-        }
-    }
-    counter
+    // filter on condition and count how many were kept
+    input.iter()
+        .filter(|((left0, left1), (right0, right1))| {
+            (left0 <= right0 && left1 >= right1) || (right0 <= left0 && right1 >= left1)
+        })
+        .count()
 }
 
 // In how many assignment pairs do the ranges overlap?
@@ -45,14 +45,11 @@ pub fn solve_part2(input: &[Data]) -> usize {
     solve_part2_inner(input)
 }
 fn solve_part2_inner(input: &[Data]) -> usize {
-    let mut counter = 0;
-    for pair in input {
-        let ((left0, left1), (right0, right1)) = pair;
-        if left0 <= right1 && right0 <= left1 {
-            counter += 1;
-        }
-    }
-    counter
+    input.iter()
+        .filter(|((left0, left1), (right0, right1))| {
+            left0 <= right1 && right0 <= left1
+        })
+        .count()
 }
 
 #[cfg(test)]
