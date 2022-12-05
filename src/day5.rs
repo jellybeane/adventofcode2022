@@ -1,5 +1,3 @@
-use std::{num, collections::VecDeque};
-
 use aoc_runner_derive::{aoc, aoc_generator};
 
 use anyhow::Result;
@@ -36,7 +34,8 @@ fn input_generator_inner(input: &str) -> Result<Data> {
         let a: usize = words[1].parse()?;
         let b: usize = words[3].parse()?;
         let c: usize = words[5].parse()?;
-        commands.push((a,b,c));
+        // given stack numbers are 1 indexed but I want 0 indexed
+        commands.push((a,b-1,c-1));
     }
     Ok((stacks, commands))
 }
@@ -48,24 +47,23 @@ pub fn solve_part1(input: &Data) -> String {
     solve_part1_inner(input)
 }
 fn solve_part1_inner(input: &Data) -> String {
-    let (stacksOrig, commands) = input;
+    let (stacks, commands) = input;
     // ??? ownership ??? can't declare 'mut stacks' above
-    let mut stacks = stacksOrig.clone();
+    let mut stacks = stacks.clone();
     // move all the crates
     for &(num_move, from_stack, to_stack) in commands {
         for _i in 0..num_move {
             // the word "crate" is reserved
-            // given stack nums are 1 indexed
-            let c = stacks[from_stack-1].pop().unwrap();
-            stacks[to_stack-1].push(c);
+            let c = stacks[from_stack].pop().unwrap();
+            stacks[to_stack].push(c);
         }
     }
     // what crate is at the top of each stack?
-    let mut top = vec![];
+    let mut top = String::new();
     for stack in stacks {
-        top.push(stack.last().unwrap().clone());
+        top.push(*stack.last().unwrap());
     }
-    top.iter().collect::<String>()
+    top
 }
 
 // Part 2: multiple crates can be moved at once
@@ -74,24 +72,24 @@ pub fn solve_part2(input: &Data) -> String {
     solve_part2_inner(input)
 }
 fn solve_part2_inner(input: &Data) -> String {
-    let (stacksOrig, commands) = input;
+    let (stacks, commands) = input;
     // ??? ownership ??? can't declare 'mut stacks' above
-    let mut stacks = stacksOrig.clone();
+    let mut stacks = stacks.clone();
     // move all the crates
+    let mut to_move = vec![];
     for &(num_move, from_stack, to_stack) in commands {
-        let mut to_move = VecDeque::new();
-        for _i in 0..num_move {
+        for _i in (0..num_move).rev() {
             // the word "crate" is reserved
-            // given stack nums are 1 indexed
-            let c = stacks[from_stack-1].pop().unwrap();
-            to_move.push_front(c);
+            let c = stacks[from_stack].pop().unwrap();
+            to_move.push(c);
         }
-        stacks[to_stack-1].append(&mut Vec::from(to_move));
+        // append is "draining": to_move will be empty after this
+        stacks[to_stack].append(&mut to_move);
     }
     // what crate is at the top of each stack?
-    let mut top = vec![];
+    let mut top = String::new();
     for stack in stacks {
-        top.push(stack.last().unwrap().clone());
+        top.push(*stack.last().unwrap());
     }
-    top.iter().collect::<String>()
+    top
 }

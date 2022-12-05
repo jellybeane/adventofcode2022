@@ -8,4 +8,4 @@ Day | Theme | Notes
 2   |Rock Paper Scissors| match statements, Ordering
 3   |Rucksacks| HashSet intersection, chunks
 4   |Overlapping intervals| Overlap checks, `split_once`, `filter`, `count`
-5   |Stacks| stacks: `Vec` and `VecDeque`
+5   |Stacks| using `Vec` as stacks 
