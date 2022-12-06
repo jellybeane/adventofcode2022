@@ -9,4 +9,4 @@ Day | Theme | Notes
 3   |Rucksacks| HashSet intersection, chunks
 4   |Overlapping intervals| Overlap checks, `split_once`, `filter`, `count`
 5   |Stacks| using `Vec` as stacks
-6   |Tuning Trouble| `window`, HashSet, generic function with trait bounds
+6   |Tuning Trouble| `windows`, `enumerate`, `find`, generic function with trait bounds, HashSet
