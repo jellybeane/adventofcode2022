@@ -17,6 +17,22 @@ fn input_generator_inner(input: &str) -> Result<Vec<Data>> {
     Ok(vec)
 }
 
+// how many characters need to be inspected
+// before we get to a window that's all unique?
+fn until_all_unique(input: &String, window_size: usize) -> usize {
+    let line = input.as_bytes();
+    let mut num = window_size;
+    for window in line.windows(window_size) {
+        if all_unique(window)
+        {
+            return num
+        }
+        num += 1;
+    }
+    num
+}
+
+// are all the elements in this iterator unique?
 // basically https://stackoverflow.com/a/46767732
 fn all_unique<T>(iter: T) -> bool
 where
@@ -34,16 +50,7 @@ pub fn solve_part1(input: &[Data]) -> usize {
     solve_part1_inner(input)
 }
 fn solve_part1_inner(input: &[Data]) -> usize {
-    let line = input[0].as_bytes();
-    let mut num = 4;
-    for window in line.windows(4) {
-        if all_unique(window)
-        {
-            break;
-        }
-        num += 1;
-    }
-    num
+    until_all_unique(&input[0], 4)
 }
 
 // How many characters need to be processed before we see
@@ -53,14 +60,5 @@ pub fn solve_part2(input: &[Data]) -> usize {
     solve_part2_inner(input)
 }
 fn solve_part2_inner(input: &[Data]) -> usize {
-    let line = input[0].as_bytes();
-    let mut num = 14;
-    for window in line.windows(14) {
-        if all_unique(window)
-        {
-            break;
-        }
-        num += 1;
-    }
-    num
+    until_all_unique(&input[0], 14)
 }
