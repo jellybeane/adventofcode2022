@@ -1,17 +1,17 @@
-use std::{vec, collections::HashMap};
+use std::vec;
 
 use aoc_runner_derive::{aoc, aoc_generator};
 
 use anyhow::Result;
 
-type Data = HashMap<String, Vec<Content>>;
+type Data = Vec<Vec<Content>>;
 
 // Implementing a fake filesystem I guess???
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Content{
-    File(String, usize),
-    Directory(String)
+    File(String, usize), // name, filesize
+    Directory(String, usize) // name, index
 }
 
 // Commands are preceded by $
@@ -28,9 +28,10 @@ pub fn input_generator(input: &str) -> Result<Data> {
 fn input_generator_inner(input: &str) -> Result<Data> {
     // I sure hope directory names are unique...
     // directory names are not unique :(
-    let mut directories = HashMap::new();
+    // use indices instead
+    let mut directories = vec![vec![]];
 
-    let mut dir_stack: Vec<&str> = vec![];
+    let mut dir_stack: Vec<(&str, usize)> = vec![("/", 0)]; // directory name and index
     let mut contents = vec![];
     for line in input.lines() {
         //dbg!(line);
@@ -42,23 +43,48 @@ fn input_generator_inner(input: &str) -> Result<Data> {
         if line.starts_with("$")
         {
             if line.starts_with("$ cd ") {
-                // moving to a new directory: check if we just finished listing one
-                if !contents.is_empty() {
-                    let cur_dir:String = dir_stack.last().unwrap().to_string();
-                    directories.insert(cur_dir, contents);
-                    contents = vec![];
-                }
+                // moving to a new directory
                 // the directory is the 3rd thing
                 iter.next();
                 iter.next();
                 let location = iter.next().unwrap();
+
+                // special case: root dir
+                if location == "/" {
+                    continue;
+                }
+
+                let &(cur_dir_name, cur_dir_index) = dir_stack.last().unwrap();
+                let dir_contents = &mut directories[cur_dir_index];
+                if !contents.is_empty() {
+                    // we just ls-ed
+                    // update directories to reflect contents
+                    std::mem::swap(&mut contents, dir_contents);
+                }
+
                 if location == ".." {
                     // going up
+                    //dbg!("popping", &dir_stack);
                     dir_stack.pop();
                 }
                 else {
                     // going in
-                    dir_stack.push(location);
+                    // one of the things inside dir_contents is this directory
+                    //dbg!(location, &dir_contents);
+                    let &my_index = dir_contents.iter().filter_map(|x| {
+                        match x {
+                            Content::File(_, _) => None,
+                            Content::Directory(name, index) => {
+                                if name == location {
+                                    Some(index)
+                                }
+                                else {
+                                    None
+                                }
+                            },
+                        }
+                    }).next().unwrap();
+                    dir_stack.push((location, my_index));
                 }
             }
         }
@@ -69,7 +95,10 @@ fn input_generator_inner(input: &str) -> Result<Data> {
                 // subdirectory
                 iter.next();
                 let name = iter.next().unwrap().to_string();
-                contents.push(Content::Directory(name))
+                let cur_index = directories.len();
+                contents.push(Content::Directory(name, cur_index));
+                // make a space for this dir on the directories vec
+                directories.push(Vec::new());
             }
             else {
                 // file
@@ -80,21 +109,25 @@ fn input_generator_inner(input: &str) -> Result<Data> {
         }
     }
     // make sure to do the last directory
-    let last_dir = dir_stack.pop().unwrap().to_string();
-    directories.insert(last_dir, contents);
-
+    if !contents.is_empty() {
+        let &(cur_dir_name, cur_dir_index) = dir_stack.last().unwrap();
+        // update directories to reflect contents
+        let dir_contents = &mut directories[cur_dir_index];
+        std::mem::swap(&mut contents, dir_contents);
+    }
+    
     Ok(directories)
 }
 
 // Recursively get the total size of this directory
-fn get_dir_size(name: &String, directories: &HashMap<String, Vec<Content>>) -> usize
+fn get_dir_size(index: usize, directories: &Vec<Vec<Content>>) -> usize
 {
-    //dbg!(name);
+    //dbg!(index);
     let mut total = 0;
-    for content in directories.get(name).unwrap() {
+    for content in &directories[index] {
         let content_size:usize = match content {
-            Content::File(_, size) => *size,
-            Content::Directory(subdir_name) => get_dir_size(subdir_name, directories),
+            &Content::File(_, size) => size,
+            &Content::Directory(_, subdir_index) => get_dir_size(subdir_index, directories),
         };
         total += content_size;
     }
@@ -109,10 +142,10 @@ pub fn solve_part1(input: &Data) -> usize {
 }
 fn solve_part1_inner(input: &Data) -> usize {
     let mut total = 0;
-    for (dir_name, _) in input {
-        let dir_size = get_dir_size(dir_name, input);
+    for (index, dir) in input.iter().enumerate() {
+        let dir_size = get_dir_size(index, input);
         if dir_size <= 100_000 {
-            dbg!(dir_name, dir_size);
+            //dbg!(index, dir_size);
             total += dir_size;
         }
     } 
@@ -124,7 +157,22 @@ pub fn solve_part2(input: &Data) -> usize {
     solve_part2_inner(input)
 }
 fn solve_part2_inner(input: &Data) -> usize {
-    unimplemented!()
+    let total_space = 70000000;
+    let want = 30000000;
+
+    let root_dir_size = get_dir_size(0, input);
+    let current_free = total_space - root_dir_size;
+    let need_to_free = want - current_free;
+
+    let mut smallest_found = total_space;
+    for (index, dir) in input.iter().enumerate() {
+        let dir_size = get_dir_size(index, input);
+        if dir_size >= need_to_free && dir_size <= smallest_found {
+            smallest_found = dir_size;
+        }
+    } 
+
+    smallest_found
 }
 
 #[cfg(test)]
@@ -168,6 +216,6 @@ $ ls
         let input = super::input_generator(TEST_INPUT).unwrap();
         let result = super::solve_part2(&input);
 
-        assert_eq!(result, 4);
+        assert_eq!(result, 24933642);
     }
 }

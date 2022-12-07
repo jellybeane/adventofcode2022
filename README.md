@@ -10,3 +10,4 @@ Day | Theme | Notes
 4   |Overlapping intervals| Overlap checks, `split_once`, `filter`, `count`
 5   |Stacks| using `Vec` as stacks
 6   |Tuning Trouble| `windows`, `enumerate`, `find`, generic function with trait bounds, HashSet
+7   |Directory| Vec-based pseudotree, enums with data, `std::mem::swap`
