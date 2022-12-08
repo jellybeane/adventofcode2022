@@ -11,3 +11,4 @@ Day | Theme | Notes
 5   |Stacks| using `Vec` as stacks
 6   |Tuning Trouble| `windows`, `enumerate`, `find`, generic function with trait bounds, HashSet
 7   |Directory| Vec-based pseudotree, enums with data, `std::mem::swap`
+8   |Grid sight lines|  for loops over reverse ranges

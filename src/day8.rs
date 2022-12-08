@@ -40,7 +40,7 @@ fn solve_part1_inner(input: &[Data]) -> usize {
         for (j, &height) in row.iter().enumerate() {
             let mut blocked = false;
             // to the left
-            for col in 0..j {
+            for col in (0..j).rev() {
                 if input[i][col] >= height {
                     //dbg!(i, j, "blocked on left");
                     blocked = true;
@@ -68,7 +68,7 @@ fn solve_part1_inner(input: &[Data]) -> usize {
 
             // up
             blocked = false;
-            for row in 0..i {
+            for row in (0..i).rev() {
                 if input[row][j] >= height {
                     //dbg!(i, j, "blocked on top");
                     blocked = true;
@@ -98,12 +98,70 @@ fn solve_part1_inner(input: &[Data]) -> usize {
     visible
 }
 
+// A tree's "scenic score" is the product of the viewing distance
+// in each of the four directions
 #[aoc(day8, part2)]
 pub fn solve_part2(input: &[Data]) -> usize {
     solve_part2_inner(input)
 }
 fn solve_part2_inner(input: &[Data]) -> usize {
-    unimplemented!()
+    let mut high_score = 0;
+    let num_rows = input.len();
+    let num_cols = input[0].len();
+    dbg!(num_rows, num_cols);
+    // there's definitely a better way...
+    for (i, row) in input.iter().enumerate() {
+        for (j, &height) in row.iter().enumerate() {
+            
+            // to the left
+            let mut leftscore = j;
+            for col in (0..j).rev() {
+                if input[i][col] >= height {
+                    //dbg!(i, j, "blocked on left");
+                    leftscore = j - col;
+                    break;
+                }
+            }
+
+            // to the right
+            let mut rightscore = num_cols - 1 - j;
+            for col in j+1..num_cols {
+                if input[i][col] >= height {
+                    //dbg!(i, j, "blocked on right");
+                    rightscore = col - j;
+                    break;
+                }
+            }
+
+            // up
+            let mut upscore = i;
+            for row in (0..i).rev() {
+                if input[row][j] >= height {
+                    //dbg!(i, j, "blocked on top");
+                    upscore = i - row;
+                    break;
+                }
+            }
+
+            // down
+            let mut downscore = num_rows - 1 - i;
+            for row in i+1..num_rows {
+                if input[row][j] >= height {
+                    //dbg!(i, j, "blocked on bottom");
+                    downscore = row - i;
+                    break;
+                }
+            }
+
+            let score = leftscore * rightscore * upscore * downscore;
+            //dbg!(i, j, score);
+            if high_score < score {
+                high_score = score
+            }
+        }
+    }
+
+    high_score
 }
 
 #[cfg(test)]
@@ -128,6 +186,6 @@ r#"30373
         let input = super::input_generator(TEST_INPUT).unwrap();
         let result = super::solve_part2(&input);
 
-        assert_eq!(result, 24933642);
+        assert_eq!(result, 8);
     }
 }
