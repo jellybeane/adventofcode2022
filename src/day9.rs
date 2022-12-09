@@ -45,6 +45,54 @@ fn input_generator_inner(input: &str) -> Result<Vec<Data>> {
 
 // Head and tail start at the same position overlapping
 
+fn update_rope_1(direction: &Direction, head: (i32, i32), tail: (i32, i32)) -> ((i32, i32), (i32, i32))
+{
+    let mut new_head = head;
+    let mut new_tail = tail;
+
+    // update head
+    match direction {
+        Direction::Right => new_head.0 += 1,
+        Direction::Left => new_head.0 -= 1,
+        Direction::Down => new_head.1 -= 1,
+        Direction::Up => new_head.1 += 1,
+    }
+    //dbg!(direction);
+    // update tail
+    // If the head is two steps directly up/down/left/right,
+    // then the tail moves one step in that direction
+    if new_head.0 == new_tail.0 { 
+        // up
+        if new_head.1 == new_tail.1 + 2 {
+            new_tail.1 += 1;
+        }
+        // down
+        else if new_head.1 == new_tail.1 - 2{
+            new_tail.1 -= 1;
+        }
+
+    }
+    else if new_head.1 == new_tail.1 { 
+        // right
+        if new_head.0 == new_tail.0 + 2 {
+            new_tail.0 += 1;
+        }
+        // left
+        else if new_head.0 == new_tail.0 - 2{
+            new_tail.0 -= 1;
+        }
+    }
+    // Else if the head and tail aren't touching and aren't in the same row/col,
+    // the tail moves one step diagonally
+    else if i32::abs(new_head.0 - tail.0) + i32::abs(new_head.1 - new_tail.1) > 2 {
+        new_tail.0 += if new_head.0 > new_tail.0 {1} else {-1};
+        new_tail.1 += if new_head.1 > new_tail.1 {1} else {-1};
+        
+    }
+    
+    (new_head, new_tail)
+}
+
 #[aoc(day9 , part1)]
 pub fn solve_part1(input: &[Data]) -> usize {
     solve_part1_inner(input)
@@ -57,45 +105,7 @@ fn solve_part1_inner(input: &[Data]) -> usize {
     let mut tail_visited = HashSet::new();
     for (direction, steps) in input {
         for _i in 0..*steps {
-            // update head
-            match direction {
-                Direction::Right => head.0 += 1,
-                Direction::Left => head.0 -= 1,
-                Direction::Down => head.1 -= 1,
-                Direction::Up => head.1 += 1,
-            }
-            //dbg!(direction);
-            // update tail
-            // If the head is two steps directly up/down/left/right,
-            // then the tail moves one step in that direction
-            if head.0 == tail.0 { 
-                // up
-                if head.1 == tail.1 + 2 {
-                    tail.1 += 1;
-                }
-                // down
-                else if head.1 == tail.1 - 2{
-                    tail.1 -= 1;
-                }
-
-            }
-            else if head.1 == tail.1 { 
-                // right
-                if head.0 == tail.0 + 2 {
-                    tail.0 += 1;
-                }
-                // left
-                else if head.0 == tail.0 - 2{
-                    tail.0 -= 1;
-                }
-            }
-            // Else if the head and tail aren't touching and aren't in the same row/col,
-            // the tail moves one step diagonally
-            else if i32::abs(head.0 - tail.0) + i32::abs(head.1 - tail.1) > 2 {
-                tail.0 += if head.0 > tail.0 {1} else {-1};
-                tail.1 += if head.1 > tail.1 {1} else {-1};
-                
-            }
+            (head, tail) = update_rope_1(direction, head, tail);
             
             tail_visited.insert(tail);
         }
