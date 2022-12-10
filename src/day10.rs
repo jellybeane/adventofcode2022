@@ -63,7 +63,7 @@ fn solve_part1_inner(input: &[Instruction]) -> isize {
         for _i in 1..=cycles_to_add {
             let signal = cycle * x;
             if cycles_to_check.contains(&cycle) {
-                dbg!(cycle, x, signal);
+                //dbg!(cycle, x, signal);
                 total += signal;
             }
             cycle += 1;
@@ -77,12 +77,70 @@ fn solve_part1_inner(input: &[Instruction]) -> isize {
     total
 }
 
+// X is the center pixel of a 3-wide sprite on a CRT screen 40 wide and 6 high.
+// Draw a single pixel per cycle left-to-right 
+// until you reach the end of the row, then go one row down.
+// Leftmost pixel is 0, rightmost is 39.
+// # if current pixel overlaps the sprite, else .
+
+// Render the image given by the input for the answer
 #[aoc(day10, part2)]
 pub fn solve_part2(input: &[Instruction]) -> usize {
     solve_part2_inner(input)
 }
 fn solve_part2_inner(input: &[Instruction]) -> usize {
-    unimplemented!()
+    use Instruction::*;
+    let mut x:isize = 1;
+    // pixels are 0 indexed while cycles are 1 indexed
+    let mut cur_pix = 0;
+    let mut cycle = 1;
+    let mut cur_row:String = String::from("");
+    for command in input {
+        // handle the command
+        let cycles_to_add;
+        let val_to_add;
+        match command {
+            Add(val) => {
+                cycles_to_add = 2;
+                val_to_add = Some(val);
+            },
+            Noop => {
+                cycles_to_add = 1;
+                val_to_add = None;
+            },
+        }
+
+        // increment cycles, rendering pixel
+        for _i in 1..=cycles_to_add {
+            let pix = if cur_pix == x-1 || cur_pix == x || cur_pix == x+1 {
+                '#'
+            }
+            else {
+                '.'
+            };
+            cur_row.push(pix);
+
+            cycle += 1;
+            cur_pix += 1;
+
+            // have we completed a row?
+            if cycle % 40 == 1 {
+                println!("{}", cur_row);
+                cur_row = String::from("");
+                cur_pix = 0;
+            }
+        }
+
+        // update X if needed
+        if let Some(val) = val_to_add {
+            x += val;
+        }
+    }
+    // the last row
+    println!("{}", cur_row);
+
+    // the solution is in the printlines: return doesn't matter
+    0
 }
 
 #[cfg(test)]
@@ -244,12 +302,5 @@ noop
         assert_eq!(result, 13140);
     }
 
-    #[test]
-    fn test_part2_example() {
-        let input = super::input_generator(TEST_INPUT).unwrap();
-        let result = super::solve_part2(&input);
-
-        assert_eq!(result, 8);
-    }
 }
 

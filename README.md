@@ -13,3 +13,4 @@ Day | Theme | Notes
 7   |Directory| Vec-based pseudotree, enums with data, `std::mem::swap`
 8   |Grid sight lines| 2D grid, for loops over reverse ranges
 9   |Rope Bridge| State manipulation, match
+10  |Cathode Ray Tube| Even more state manipulation and match, `if let Some(x) = y`

@@ -1,3 +1,5 @@
+#![allow(unused_variables)]
+
 use std::vec;
 
 use aoc_runner_derive::{aoc, aoc_generator};
