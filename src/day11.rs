@@ -1,64 +1,34 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, rc::Rc};
 
 use aoc_runner_derive::{aoc, aoc_generator};
 
 use anyhow::Result;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Operation {
-    // The operation this monkey applies
-    // None indicates the given value should be reused
-    Add(Option<usize>),
-    Multiply(Option<usize>)
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Clone)]
 pub struct Monkey {
     items: VecDeque<usize>,
-    op: Operation,
+    // the operation that this monkey does
+    // a "reference-counted closure trait object"
+    op: Rc<dyn Fn(usize) -> usize>,
     pub divisor: usize, 
     true_target: usize, // If divisible, throw here
     false_target: usize // If not divisible, throw here
 }
 
 impl Monkey {
-    pub fn num_items(&self) -> usize {
-        self.items.len()
-    }
-
-    // any more items?
-    pub fn has_next(&self) -> bool {
-        !self.items.is_empty()
-    }
-
-    /// Get out the item to inspect, or None if there are no more
-    pub fn next_item(&mut self) -> Option<usize> {
-        self.items.pop_front()
-    }
-
     /// Add an item to my items
     pub fn add_item(&mut self, item: usize) {
         self.items.push_back(item);
     }
 
-    /// Return the new worry level after applying my operation
-    pub fn apply_operation(&mut self, item: usize) -> usize {
-        match self.op {
-            Operation::Add(Some(val)) => item + val,
-            Operation::Add(None) => item + item,
-            Operation::Multiply(Some(val)) => item * val,
-            Operation::Multiply(None) => item * item,
-        }
-    }
-
-    // inspect all of my items, and return who to throw each item to
+    /// inspect all of my items, and return who to throw each item to
     pub fn process_items_1(&mut self) -> Result<Vec<(usize, usize)>> {
         let mut thrown_items = vec![];
-        while self.has_next() {
+        while !self.items.is_empty() {
             // Get out the item
-            let worry_level = self.next_item().unwrap();
+            let worry_level = self.items.pop_front().unwrap();
             // Inspect the item
-            let worry_level = self.apply_operation(worry_level);
+            let worry_level = (self.op)(worry_level);
             // Get bored with the item
             let worry_level = worry_level / 3;
             // Throw to someone else
@@ -78,11 +48,11 @@ impl Monkey {
     // Need to deal with unmanageably large numbers
     pub fn process_items_2(&mut self, product_of_divisors: usize) -> Result<Vec<(usize, usize)>> {
         let mut thrown_items = vec![];
-        while self.has_next() {
+        while !self.items.is_empty() {
             // Get out the item
-            let mut worry_level = self.next_item().unwrap();
+            let mut worry_level = self.items.pop_front().unwrap();
             // Inspect the item
-            worry_level = self.apply_operation(worry_level);
+            worry_level = (self.op)(worry_level);
 
             // Throw to someone else
             let target = if worry_level % self.divisor == 0 {
@@ -131,13 +101,29 @@ fn input_generator_inner(input: &str) -> Result<Vec<Monkey>> {
         // line 2: operation
         let (_, operation_str) = monkey_lines[2].split_once("old ").unwrap();
         let (operator_str, num_str) = operation_str.split_once(" ").unwrap();
-        let opnum = match  num_str.parse() {
+        let opnum: Option<usize> = match num_str.parse() {
             Ok(val) => Some(val),
             Err(_) => None,
         };
-        let op = match operator_str {
-            "*" => Operation::Multiply(opnum),
-            "+" => Operation::Add(opnum),
+        let op: Rc<dyn Fn(usize) -> usize> = match operator_str {
+            "*" => {
+                let closure = move |x| {
+                    match opnum {
+                        Some(val) => x * val,
+                        None => x * x,
+                    }
+                };
+                Rc::new(closure)
+            },
+            "+" => {
+                let closure = move |x| {
+                    match opnum {
+                        Some(val) => x + val,
+                        None => x + x,
+                    }
+                };
+                Rc::new(closure)
+            },
             _ => unreachable!()
         };
 
@@ -170,8 +156,8 @@ fn solve_part1_inner(input: &[Monkey]) -> usize {
         // for each monkey
         for index in 0..monkeys.len() {
             // the monkey does its thing, and returns all the thrown items
-            inspections[index] += monkeys[index].num_items();
             let thrown_items = monkeys[index].process_items_1().unwrap();
+            inspections[index] += thrown_items.len();
             // all thrown items are received by target monkeys
             for (target, item) in thrown_items {
                 monkeys[target].add_item(item);
@@ -209,8 +195,8 @@ fn solve_part2_inner(input: &[Monkey]) -> usize {
         // for each monkey
         for index in 0..monkeys.len() {
             // the monkey does its thing, and returns all the thrown items
-            inspections[index] += monkeys[index].num_items();
             let thrown_items = monkeys[index].process_items_2(product_of_divisors).unwrap();
+            inspections[index] += thrown_items.len();
             // all thrown items are received by target monkeys
             for (target, item) in thrown_items {
                 monkeys[target].add_item(item);
