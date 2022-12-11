@@ -22,21 +22,22 @@ pub struct Monkey {
 }
 
 impl Monkey {
+    pub fn num_items(&self) -> usize {
+        self.items.len()
+    }
+
     // any more items?
-    pub fn has_next(&self) -> bool
-    {
+    pub fn has_next(&self) -> bool {
         !self.items.is_empty()
     }
 
     /// Get out the item to inspect, or None if there are no more
-    pub fn next_item(&mut self) -> Option<usize>
-    {
+    pub fn next_item(&mut self) -> Option<usize> {
         self.items.pop_front()
     }
 
     /// Add an item to my items
-    pub fn add_item(&mut self, item: usize)
-    {
+    pub fn add_item(&mut self, item: usize) {
         self.items.push_back(item);
     }
 
@@ -51,8 +52,7 @@ impl Monkey {
     }
 
     /// Who should this item be thrown to?
-    pub fn get_target(&self, item: usize) -> usize
-    {
+    pub fn get_target(&self, item: usize) -> usize {
         if item % self.divisor == 0 {
             self.true_target
         }
@@ -142,22 +142,21 @@ pub fn solve_part1(input: &[Monkey]) -> usize {
     solve_part1_inner(input)
 }
 fn solve_part1_inner(input: &[Monkey]) -> usize {
-    dbg!(input);
-    /* 
-    let mut monkeys = input.clone();
+    //dbg!(input);
+
+    let mut monkeys = input.to_vec();
     let mut inspections = vec![0; monkeys.len()];
     // Part 1: monkey business after 20 rounds
-    for round in 0..20 {
+    for _round in 0..20 {
         // for each monkey
-        // TODO how do I modify the monkeys?
+        // TODO I don't understand how to iterate over monkeys
         for index in 0..monkeys.len() {
             // the monkey does its thing, and returns all the thrown items
-            let mut monkey: &mut Monkey = &mut monkeys[index];
-            let mut thrown_items = monkey.process_items().unwrap();
+            inspections[index] += monkeys[index].num_items();
+            let thrown_items = monkeys[index].process_items().unwrap();
             // all thrown items are received by target monkeys
             for (target, item) in thrown_items {
-                let mut target_monkey = &mut monkeys[target];
-                target_monkey.add_item(item);
+                monkeys[target].add_item(item);
             }
         }
     }
@@ -169,8 +168,7 @@ fn solve_part1_inner(input: &[Monkey]) -> usize {
     let most_active = monkey_it.next().unwrap();
     let next_active = monkey_it.next().unwrap();
     most_active * next_active
-    */
-    unimplemented!()
+
 }
 
 #[aoc(day11, part2)]
@@ -217,7 +215,7 @@ Test: divisible by 17
         let input = super::input_generator(TEST_INPUT).unwrap();
         let result = super::solve_part1(&input);
 
-        assert_eq!(result, 13);
+        assert_eq!(result, 10605);
     }
 
     #[test]

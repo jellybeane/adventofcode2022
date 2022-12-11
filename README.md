@@ -14,3 +14,4 @@ Day | Theme | Notes
 8   |Grid sight lines| 2D grid, for loops over reverse ranges
 9   |Rope Bridge| State manipulation, match
 10  |Cathode Ray Tube| Even more state manipulation and match, `if let Some(x) = y`
+11  |Monkeys| `impl` methods for a struct, mutable reference just means you can change where it's pointing to
