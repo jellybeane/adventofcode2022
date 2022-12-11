@@ -6,8 +6,10 @@ use anyhow::Result;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Operation {
-    Add(usize),
-    Multiply(usize)
+    // The operation this monkey applies
+    // None indicates the given value should be reused
+    Add(Option<usize>),
+    Multiply(Option<usize>)
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -41,8 +43,10 @@ impl Monkey {
     /// Return the new worry level after applying my operation
     pub fn apply_operation(&mut self, item: usize) -> usize {
         match self.op {
-            Operation::Add(val) => item + val,
-            Operation::Multiply(val) => item * val,
+            Operation::Add(Some(val)) => item + val,
+            Operation::Add(None) => item + item,
+            Operation::Multiply(Some(val)) => item * val,
+            Operation::Multiply(None) => item * item,
         }
     }
 
@@ -92,15 +96,21 @@ fn input_generator_inner(input: &str) -> Result<Vec<Monkey>> {
     let v: Vec<&str> = input.lines().collect();
     // doing cursed things because I know the structure
     // each monkey's text is 6 lines plus a whitespace
-    for monkey_lines in v.windows(7) {
+    for monkey_lines in v.chunks(7) {
+        //dbg!(monkeys.len());
         // line 1: items
         let (_, items_str) = monkey_lines[1].split_once(": ").unwrap();
+        //dbg!(items_str);
         let items: VecDeque<usize> = items_str.split(", ").map(|x| {x.parse().unwrap()}).collect();
         
         // line 2: operation
-        let (_, operation_str) = monkey_lines[2].split_once("old").unwrap();
+        let (_, operation_str) = monkey_lines[2].split_once("old ").unwrap();
+        //dbg!(operation_str);
         let (operator_str, num_str) = operation_str.split_once(" ").unwrap();
-        let opnum:usize = num_str.parse()?;
+        let opnum = match  num_str.parse() {
+            Ok(val) => Some(val),
+            Err(_) => None,
+        };
         let op = match operator_str {
             "*" => Operation::Multiply(opnum),
             "+" => Operation::Add(opnum),
@@ -109,13 +119,16 @@ fn input_generator_inner(input: &str) -> Result<Vec<Monkey>> {
 
         // line 3: test (always divisible by)
         let (_, divisor_str) = monkey_lines[3].split_once("by ").unwrap();
+        //dbg!(divisor_str);
         let divisor: usize = divisor_str.parse()?;
 
         // line 4: target monkey if true
         let (_, target_str) = monkey_lines[4].split_once("monkey ").unwrap();
+        //dbg!(target_str);
         let true_target: usize = target_str.parse()?;
         // line 5: target monkey if true
         let (_, target_str) = monkey_lines[5].split_once("monkey ").unwrap();
+        //dbg!(target_str);
         let false_target: usize = target_str.parse()?;
 
         let monkey = Monkey {items, op, divisor, true_target, false_target};
@@ -129,6 +142,8 @@ pub fn solve_part1(input: &[Monkey]) -> usize {
     solve_part1_inner(input)
 }
 fn solve_part1_inner(input: &[Monkey]) -> usize {
+    dbg!(input);
+    /* 
     let mut monkeys = input.clone();
     let mut inspections = vec![0; monkeys.len()];
     // Part 1: monkey business after 20 rounds
@@ -137,7 +152,7 @@ fn solve_part1_inner(input: &[Monkey]) -> usize {
         // TODO how do I modify the monkeys?
         for index in 0..monkeys.len() {
             // the monkey does its thing, and returns all the thrown items
-            let mut monkey = &mut monkeys[index];
+            let mut monkey: &mut Monkey = &mut monkeys[index];
             let mut thrown_items = monkey.process_items().unwrap();
             // all thrown items are received by target monkeys
             for (target, item) in thrown_items {
@@ -154,6 +169,8 @@ fn solve_part1_inner(input: &[Monkey]) -> usize {
     let most_active = monkey_it.next().unwrap();
     let next_active = monkey_it.next().unwrap();
     most_active * next_active
+    */
+    unimplemented!()
 }
 
 #[aoc(day11, part2)]
