@@ -15,3 +15,4 @@ Day | Theme | Notes
 9   |Rope Bridge| State manipulation, match
 10  |Cathode Ray Tube| Even more state manipulation and match, `if let Some(x) = y`
 11  |Monkeys| `impl` methods for a struct, fighting the borrow checker, remainders, how to keep a closure as a struct's member
+12  |Elevation map| Dijkstra, Generics with Trait Bounds (`where` expression)

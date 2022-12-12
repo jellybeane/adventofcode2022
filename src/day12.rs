@@ -65,9 +65,12 @@ impl PartialOrd for Node {
     }
 }
 
-/// Given a location and elevation grid, 
-/// return the locations I can get to accounting for the height rule
-fn get_neighbors(location: (usize, usize), grid: &Vec<Vec<usize>>) -> Vec<(usize, usize)>
+/// Given a location, elevation grid, and elevation change rule,
+/// return the locations I can get to
+fn get_neighbors<F>(location: (usize, usize), grid: &Vec<Vec<usize>>,
+        is_valid_move: &F) 
+        -> Vec<(usize, usize)>
+        where F: Fn(&Vec<Vec<usize>>, (usize, usize), (usize, usize))  -> bool
 {
     let mut neighbors = vec![];
     let num_rows = grid.len() as isize;
@@ -80,7 +83,7 @@ fn get_neighbors(location: (usize, usize), grid: &Vec<Vec<usize>>) -> Vec<(usize
         let col = (location.1 as isize) + offset.1;
         // does the neighbor actually exist, and is elevation change OK?
         if row >= 0 && row < num_rows && col >= 0 && col < num_cols 
-                && grid[row as usize][col as usize] <= grid[location.0][location.1] + 1 {
+                && is_valid_move(grid, (row as usize, col as usize), location) {
             neighbors.push((row as usize, col as usize));
         }
     }
@@ -88,9 +91,11 @@ fn get_neighbors(location: (usize, usize), grid: &Vec<Vec<usize>>) -> Vec<(usize
     neighbors
 }
 
-/// Given a start location and elevation grid,
+/// Given a start location, elevation grid, and elevation change rule
 /// return the distance to every location
-fn red_blob(start: (usize, usize), grid: &Vec<Vec<usize>>) -> Vec<Vec<usize>>
+fn red_blob<F>(start: (usize, usize), grid: &Vec<Vec<usize>>, is_valid_move: F) 
+        -> Vec<Vec<usize>>
+        where F: Fn(&Vec<Vec<usize>>, (usize, usize), (usize, usize))  -> bool
 {
     let num_rows = grid.len();
     let num_cols = grid[0].len();
@@ -106,8 +111,7 @@ fn red_blob(start: (usize, usize), grid: &Vec<Vec<usize>>) -> Vec<Vec<usize>>
     let mut frontier:Vec<Node> = vec![start_node];
 
     while let Some(node) = frontier.pop() {
-        // TODO get neighbors
-        let neighbors = get_neighbors((node.row, node.col), grid);
+        let neighbors = get_neighbors((node.row, node.col), grid, &is_valid_move);
         for neighbor in neighbors {
             let new_distance = node.distance + 1;
             if new_distance < distance[neighbor.0][neighbor.1] {
@@ -132,17 +136,43 @@ pub fn solve_part1(input: &Data) -> usize {
     solve_part1_inner(input)
 }
 fn solve_part1_inner(input: &Data) -> usize {
-    let distances = red_blob(input.start, &input.grid);
+    // pass in is_valid_move as a closure: given the elevation grid, neighbor coords, and location coord,
+    // is going from location to neighbor allowed?
+    let distances = red_blob(input.start, &input.grid, 
+        |grid, (row, col), location|{
+            grid[row][col] <= grid[location.0][location.1] + 1
+        }
+    );
 
     distances[input.end.0][input.end.1]
 }
 
+// Part 2: the fewest steps to move from any square with elevation a
+// to the end
 #[aoc(day12, part2)]
 pub fn solve_part2(input: &Data) -> usize {
     solve_part2_inner(input)
 }
 fn solve_part2_inner(input: &Data) -> usize {
-    unimplemented!()
+    // pass in is_valid_move as a closure: given the elevation grid, neighbor coords, and location coord,
+    // is going from neighbor to location allowed?
+    let distances = red_blob(input.end, &input.grid, 
+        |grid, (row, col), location|{
+            grid[location.0][location.1] <= grid[row][col] + 1 
+        }
+    );
+
+    let num_rows = input.grid.len();
+    let num_cols = input.grid[0].len();
+    let mut fewest_steps = usize::MAX;
+    for i in 0..num_rows {
+        for j in 0..num_cols {
+            if input.grid[i][j] == 0 && distances[i][j] < fewest_steps {
+                fewest_steps = distances[i][j]
+            }
+        }
+    }
+    fewest_steps
 }
 
 #[cfg(test)]
@@ -167,6 +197,6 @@ abdefghi
         let input = super::input_generator(TEST_INPUT).unwrap();
         let result = super::solve_part2(&input);
 
-        assert_eq!(result, 0);
+        assert_eq!(result, 29);
     }
 }
