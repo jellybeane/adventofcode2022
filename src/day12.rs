@@ -110,6 +110,9 @@ fn red_blob<F>(start: (usize, usize), grid: &Vec<Vec<usize>>, is_valid_move: F)
     };
     let mut frontier:Vec<Node> = vec![start_node];
 
+    // Depth-First Search: this only works because it's running to completion
+    // (gets distances to all grid cells)
+    // It'd be Breadth-First if this were a Queue instead of a Stack
     while let Some(node) = frontier.pop() {
         let neighbors = get_neighbors((node.row, node.col), grid, &is_valid_move);
         for neighbor in neighbors {
@@ -124,7 +127,6 @@ fn red_blob<F>(start: (usize, usize), grid: &Vec<Vec<usize>>, is_valid_move: F)
                 distance[neighbor.0][neighbor.1] = new_distance;
             }
         }
-        frontier.sort();
     }
 
     distance
