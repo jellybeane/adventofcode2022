@@ -1,4 +1,4 @@
-use std::vec;
+use std::{vec, collections::VecDeque};
 
 use aoc_runner_derive::{aoc, aoc_generator};
 
@@ -108,12 +108,12 @@ fn red_blob<F>(start: (usize, usize), grid: &Vec<Vec<usize>>, is_valid_move: F)
         col: start.1,
         distance: 0
     };
-    let mut frontier:Vec<Node> = vec![start_node];
+    let mut frontier = VecDeque::new();
+    frontier.push_back(start_node);
 
-    // Depth-First Search: this only works because it's running to completion
-    // (gets distances to all grid cells)
-    // It'd be Breadth-First if this were a Queue instead of a Stack
-    while let Some(node) = frontier.pop() {
+    // Breadth-First Search
+    // It'd be Depth-First if this were a Stack instead of a Queue
+    while let Some(node) = frontier.pop_front() {
         let neighbors = get_neighbors((node.row, node.col), grid, &is_valid_move);
         for neighbor in neighbors {
             let new_distance = node.distance + 1;
@@ -123,7 +123,7 @@ fn red_blob<F>(start: (usize, usize), grid: &Vec<Vec<usize>>, is_valid_move: F)
                     col: neighbor.1, 
                     distance: new_distance
                 };
-                frontier.push(neighbor_node);
+                frontier.push_back(neighbor_node);
                 distance[neighbor.0][neighbor.1] = new_distance;
             }
         }
