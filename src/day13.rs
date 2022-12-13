@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, collections::VecDeque, vec};
+use std::{cmp::Ordering, vec};
 
 use aoc_runner_derive::{aoc, aoc_generator};
 
@@ -24,14 +24,6 @@ impl Ord for Data {
             },
             (Data::List(my_list), Data::List(their_list)) => {
                 // If they're both lists, order by the first thing that differs
-
-                if my_list.is_empty() {
-                    return Ordering::Less
-                }
-                else if their_list.is_empty()  {
-                    return Ordering::Greater
-                }
-
                 let len_to_use = std::cmp::min(my_list.len(), their_list.len());
                 for i in 0..len_to_use {
                     let mine = &my_list[i];
@@ -56,32 +48,53 @@ impl PartialOrd for Data {
     }
 }
 
-fn parse_data(input: &str) -> Data {
+fn parse_data(input: &str) -> (Data, &str) {
     if input.starts_with("[") {
-        let list = vec![];
+        let mut list = vec![];
 
-        let mut substr = "";
-        for (index, char) in input.chars().enumerate() {
-            match char {
-                ']' => todo!(),
-                '[' => {
-                    if index == 0 { () }
-                    else {
-                        todo!()
-                    }
+        let mut rest_of_str = &input[1..];
+        while !rest_of_str.is_empty() {
+            let b = rest_of_str.as_bytes()[0];
+            match b {
+                // finished the list: break out of the loop
+                b']' => {
+                    rest_of_str = &rest_of_str[1..];
+                    break;
+                },
+                // starting a new list
+                b'[' => {
+                    let (new_list, returned_str) = parse_data(rest_of_str);
+                    list.push(new_list);
+                    rest_of_str = returned_str;
                 }
-                ',' => todo!(),
-                _ => todo!(),
+                // comma: move on to the next thing
+                b',' => {
+                    rest_of_str = &rest_of_str[1..];
+                },
+                // otherwise, it's a number
+                _ => {
+                    let (num, returned_str) = parse_data(rest_of_str);
+                    list.push(num);
+                    rest_of_str = returned_str;
+                },
             }
         }
         
-
-        Data::List(list)
+        (Data::List(list), rest_of_str)
     }
     else {
-        // it's a number
-        let num: usize = input.parse().unwrap();
-        Data::Number(num)
+        // it's a number: we need to get the string up to the next "," or "]",
+        // and then parse it
+        let mut index = None;
+        for (i, b) in input.bytes().enumerate() {
+            if b == b']' || b == b',' {
+                index = Some(i);
+                break;
+            }
+        }
+        let index = index.unwrap_or(input.len());
+        let num: usize = input[..index].parse().unwrap();
+        (Data::Number(num), &input[index..])
     }
 }
 
@@ -97,9 +110,13 @@ fn input_generator_inner(input: &str) -> Result<Vec<(Data, Data)>> {
 
     // Input is pairs of "packets", separated by blank lines
     for pair in v.chunks(3) {
-        let left = pair[0];
-        let right = pair[1];
-        // TODO how to parse the packets?
+        let (left, left_remainder) = parse_data(pair[0]);
+        let (right, right_remainder) = parse_data(pair[1]);
+        
+        assert!(left_remainder.is_empty());
+        assert!(right_remainder.is_empty());
+
+        pairs.push((left,right));
     }
 
     Ok(pairs)
