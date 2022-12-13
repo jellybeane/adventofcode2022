@@ -4,6 +4,7 @@ use aoc_runner_derive::{aoc, aoc_generator};
 
 use anyhow::Result;
 
+/// "Packets" which consist of lists and integers
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Data {
     Number(usize),
@@ -48,6 +49,8 @@ impl PartialOrd for Data {
     }
 }
 
+/// Parse the next data element for the packet
+/// Return the parsed element and the rest of the string
 fn parse_data(input: &str) -> (Data, &str) {
     if input.starts_with("[") {
         let mut list = vec![];
@@ -100,11 +103,12 @@ fn parse_data(input: &str) -> (Data, &str) {
 
 
 #[aoc_generator(day13)]
-pub fn input_generator(input: &str) -> Result<Vec<(Data, Data)>> {
+pub fn input_generator(input: &str) -> Result<Vec<Data>> {
     input_generator_inner(input)
 }
-fn input_generator_inner(input: &str) -> Result<Vec<(Data, Data)>> {
-    let mut pairs = vec![];
+fn input_generator_inner(input: &str) -> Result<Vec<Data>> {
+    //let mut pairs = vec![];
+    let mut packets = vec![];
 
     let v: Vec<&str> = input.lines().collect();
 
@@ -116,41 +120,68 @@ fn input_generator_inner(input: &str) -> Result<Vec<(Data, Data)>> {
         assert!(left_remainder.is_empty());
         assert!(right_remainder.is_empty());
 
-        pairs.push((left,right));
+        //pairs.push((left,right));
+        packets.push(left);
+        packets.push(right)
     }
 
-    Ok(pairs)
+    //Ok(pairs)
+    Ok(packets)
 }
-
 
 
 // Part 1: sum of the indices of the pairs that are in the right order
 // 1 indexed
 #[aoc(day13, part1)]
-pub fn solve_part1(input: &[(Data, Data)]) -> usize {
+pub fn solve_part1(input: &[Data]) -> usize {
     solve_part1_inner(input)
 }
-fn solve_part1_inner(input: &[(Data, Data)]) -> usize {
-    
-
+fn solve_part1_inner(input: &[Data]) -> usize {
     let mut index_sum = 0;
-    for (i, (left, right)) in input.iter().enumerate() {
-        match left.cmp(right)
+    for (i, chunk) in input.chunks(2).enumerate() {
+        let left = &chunk[0];
+        let right = &chunk[1];
+        match left.cmp(&right)
         {
             Ordering::Less => index_sum += i + 1,
             _ => ()
         }
     }
-
     index_sum
 }
 
+// Part 2: Sort all the given packets, adding in the additional packets [[2]] and [[6]]
+// Then, multiply together their indices (1-indexed)
 #[aoc(day13, part2)]
-pub fn solve_part2(input: &[(Data, Data)]) -> usize {
+pub fn solve_part2(input: &[Data]) -> usize {
     solve_part2_inner(input)
 }
-fn solve_part2_inner(input: &[(Data, Data)]) -> usize {
-    unimplemented!()
+fn solve_part2_inner(input: &[Data]) -> usize {
+    use Data::*;
+    let two = List(vec![List(vec![Number(2)])]);
+    let six = List(vec![List(vec![Number(6)])]);
+
+    let mut packets = input.to_vec();
+    packets.push(two);
+    packets.push(six);
+    packets.sort(); // since Ord is conveniently implemented
+
+    // push drains, so declare them again?
+    let two = List(vec![List(vec![Number(2)])]);
+    let six = List(vec![List(vec![Number(6)])]);
+
+    let mut two_index = None;
+    let mut six_index = None;
+    for (i, data) in packets.iter().enumerate() {
+        if data.eq(&two) {
+            two_index = Some(i+1);
+        }
+        else if data.eq(&six) {
+            six_index = Some(i+1);
+        }
+    }
+
+    two_index.unwrap() * six_index.unwrap()
 }
 
 #[cfg(test)]
@@ -193,29 +224,7 @@ r#"[1,1,3,1,1]
         let input = super::input_generator(TEST_INPUT).unwrap();
         let result = super::solve_part2(&input);
 
-        assert_eq!(result, 0);
+        assert_eq!(result, 140);
     }
 
-    // a helper for handwriting Data
-    use super::Data;
-    fn make_list(numbers: &[usize]) -> Data {
-        let v = numbers.iter().map(|&x| Data::Number(x)).collect();
-        Data::List(v)
-    }
-    // handwritten input to test things because parsing is hard
-    #[test]
-    fn test_handwritten() {
-        let mut example = vec![];
-        // hardcoding example just so I can test
-        example.push((make_list(&[1,1,3,1,1]), make_list(&[1,1,5,1,1])));
-        example.push((Data::List(vec![make_list(&[1]), make_list(&[2,3,4])]),
-                    Data::List(vec![make_list(&[1]), Data::Number(4)])));
-        example.push((make_list(&[9]), Data::List(vec![make_list(&[8,7,6])])));
-        example.push((Data::List(vec![make_list(&[4,4,]), Data::Number(4), Data::Number(4)]),
-        Data::List(vec![make_list(&[4,4,]), Data::Number(4), Data::Number(4), Data::Number(4)])));
-
-        let result = super::solve_part1(&example);
-
-        assert_eq!(result, 7);
-    }
 }
