@@ -64,8 +64,8 @@ fn solve_part1_inner(input: &Data) -> usize {
     let (sensors, beacons) = input.clone();
 
     // how do i use different values for test and real?
-    let y_to_check = 10; 
-    // let y_to_check = 2_000_000;
+    //let y_to_check = 10; 
+    let y_to_check = 2_000_000;
     // HashSet of the columns covered by sensor radii
     // it's fine is a point is covered by more than one sensor
     let mut covered = HashSet::new();
