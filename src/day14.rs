@@ -57,10 +57,10 @@ fn input_generator_inner(input: &str) -> Result<Data> {
         rocks.push(rock_structure);
     }
 
-    // arbitrarily margining the grid
     // could probably use x/ymin to make the grid smaller i guess
     // Note that the grid is [y][x]: row then col
-    let mut grid = vec![vec![Air; xmax + 2]; ymax + 2];
+    // the coords are 0-indexed this time
+    let mut grid = vec![vec![Air; xmax+1]; ymax+1];
 
     for rock_structure in rocks {
         let mut prev_coord = None;
@@ -87,7 +87,6 @@ fn input_generator_inner(input: &str) -> Result<Data> {
             }
         }
     }
-    dbg!(xmin, xmax, ymin, ymax);
     Ok(grid)
 }
 
@@ -153,12 +152,59 @@ fn solve_part1_inner(input: &Data) -> usize {
     num_sand
 }
 
+// Part 2: there's a floor instead of an abyss
+// Units of sand until sand comes to rest at 500,0
 #[aoc(day14, part2)]
 pub fn solve_part2(input: &Data) -> usize {
     solve_part2_inner(input)
 }
 fn solve_part2_inner(input: &Data) -> usize {
-    unimplemented!()
+    // Part 2: add a row of air and a row of rock underneath
+    // also make the grid bigger
+    let mut grid = input.clone();
+    let num_cols = grid[0].len();
+    // idk how many more cols we need to add
+    for row_index in 0..grid.len() {
+        let mut to_add = vec![Material::Air; num_cols];
+        grid[row_index].append(&mut to_add);
+    }
+    let num_cols = grid[0].len();
+
+    grid.push(vec![Material::Air; num_cols]);
+    grid.push(vec![Material::Rock; num_cols]);
+
+    let mut num_sand = 0;
+    // Sand comes from the point x=500 y=0
+    let mut sand_coord = (0, 500);
+    loop {
+        //dbg!(num_sand, sand_coord);
+        match sand_step(sand_coord, &grid) {
+            SandAction::Fall(new_coord) => {
+                //dbg!("falling", new_coord);
+                sand_coord = new_coord
+            },
+            SandAction::AtRest(final_coord) => {
+                // this sand is done
+                grid[final_coord.0][final_coord.1] = Material::Sand;
+                num_sand += 1;
+                
+                // is the start blocked?
+                if 0 == final_coord.0 {
+                    //dbg!("blocked", num_sand, sand_coord);
+                    break
+                }
+
+                // generate more sand
+                sand_coord = (0, 500);
+            },
+            SandAction::Abyss => {
+                dbg!("fell in the abyss", num_sand, sand_coord);
+                unreachable!()
+            },
+        }
+    }
+
+    num_sand
 }
 
 #[cfg(test)]
@@ -180,6 +226,6 @@ r#"498,4 -> 498,6 -> 496,6
         let input = super::input_generator(TEST_INPUT).unwrap();
         let result = super::solve_part2(&input);
 
-        assert_eq!(result, 0);
+        assert_eq!(result, 93);
     }
 }
