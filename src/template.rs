@@ -27,3 +27,29 @@ pub fn solve_part2(input: &[Data]) -> usize {
 fn solve_part2_inner(input: &[Data]) -> usize {
     unimplemented!()
 }
+
+#[cfg(test)]
+mod test {
+    const TEST_INPUT: &'static str =
+r#"REPLACE
+ME
+WITH
+TEST
+INPUT
+"#;
+    #[test]
+    fn test_part1_example() {
+        let input = super::input_generator(TEST_INPUT).unwrap();
+        let result = super::solve_part1(&input);
+
+        assert_eq!(result, 0);
+    }
+
+    #[test]
+    fn test_part2_example() {
+        let input = super::input_generator(TEST_INPUT).unwrap();
+        let result = super::solve_part2(&input);
+
+        assert_eq!(result, 0);
+    }
+}
