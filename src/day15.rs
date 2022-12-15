@@ -84,9 +84,9 @@ fn solve_part1_inner(input: &Data) -> usize {
                 covered.insert(sensor.x + i);
             }
             // do sensors count?
-            if sensor.y == y_to_check {
-                covered.remove(&sensor.x);
-            }
+            // if sensor.y == y_to_check {
+            //     covered.remove(&sensor.x);
+            // }
         }
     }
     
