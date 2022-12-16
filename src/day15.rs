@@ -58,6 +58,7 @@ fn input_generator_inner(input: &str) -> Result<Data> {
     Ok((sensors, beacons))
 }
 
+/// Add a new range to existing ranges
 fn add_range(ranges: &mut Vec<RangeInclusive<isize>>, new_range: RangeInclusive<isize>) {
     let mut overlap_indices = vec![];
     // find indices of all ranges that overlap
@@ -103,22 +104,17 @@ fn add_range(ranges: &mut Vec<RangeInclusive<isize>>, new_range: RangeInclusive<
     }
 }
 
-// Part 1: in a given row, how many positions cannot contain a beacon
-#[aoc(day15, part1)]
-pub fn solve_part1(input: &Data) -> usize {
-    solve_part1_inner(input, 2_000_000)
-}
-fn solve_part1_inner(input: &Data, y_to_check: isize) -> usize {
-    let (sensors, beacons) = input.clone();
-
+/// For a given row, get the positions covered by sensors
+fn get_sensor_coverage(sensors: &Vec<Sensor>, y: isize) -> Vec<RangeInclusive<isize>>
+{
     let mut covered_ranges = vec![];
 
     for sensor in sensors {
         // does this sensor's range overlap the row to check?
-        if sensor.y - sensor.radius <= y_to_check
-                && sensor.y + sensor.radius >= y_to_check {
+        if sensor.y - sensor.radius <= y
+                && sensor.y + sensor.radius >= y {
             
-            let delta_y = (sensor.y - y_to_check).abs();
+            let delta_y = (sensor.y - y).abs();
             let delta_x = sensor.radius - delta_y;
             assert!(delta_x >= 0);
             // go leftwards and rightwards from the center
@@ -128,25 +124,32 @@ fn solve_part1_inner(input: &Data, y_to_check: isize) -> usize {
         }
     }
 
+    covered_ranges
+}
+
+// Part 1: in a given row, how many positions cannot contain a beacon
+#[aoc(day15, part1)]
+pub fn solve_part1(input: &Data) -> usize {
+    solve_part1_inner(input, 2_000_000)
+}
+fn solve_part1_inner(input: &Data, y_to_check: isize) -> usize {
+    let (sensors, beacons) = input.clone();
+
+    let covered_ranges = get_sensor_coverage(sensors, y_to_check);
+
     let mut num_covered = 0;
     for range in &covered_ranges {
         num_covered += range.end() - range.start() + 1;
     }
-    //dbg!(num_covered);
     
     // do not double-count the spots where beacons already are
-    let mut num_beacons_on_line = 0;
-
     for beacon in beacons {
         if beacon.y == y_to_check {
-            num_beacons_on_line += 1;
+            num_covered -= 1;
         }
     }
-    //dbg!(num_beacons_on_line);
-    
-    //dbg!(covered_ranges);
 
-    (num_covered - num_beacons_on_line) as usize
+    num_covered as usize
 }
 
 // Part 2
@@ -154,18 +157,47 @@ fn solve_part1_inner(input: &Data, y_to_check: isize) -> usize {
 // with x and y coordinates in the range [0, 4_000_000]
 // Where is it?
 // "Tuning Frequency": x*4_000_000 + y
+
+fn tuning(x: isize, y: isize) -> usize {
+    (x*4_000_000 + y) as usize
+}
+
 #[aoc(day15, part2)]
 pub fn solve_part2(input: &Data) -> usize {
-    solve_part2_inner(input)
+    solve_part2_inner(input, 4_000_000)
 }
-fn solve_part2_inner(input: &Data) -> usize {
-    // hmm part 1 takes 697.8277ms for me
-    // so doing the same thing row by row is not the way to go...
+fn solve_part2_inner(input: &Data, max_coord: isize) -> usize {
+    let (sensors, _) = input.clone();
 
-    let max_coord = 20;
-    // let max_coord = 4_000_000;
+    for y in 0..=max_coord {
+        let covered_ranges = get_sensor_coverage(sensors, y);
 
-    unimplemented!()
+        // does the first sensor start after 0?
+        if covered_ranges.first().unwrap().start() > &0 {
+            return tuning(covered_ranges.first().unwrap().start()-1, y);
+        }
+        // does the last sensor end before the max coord?
+        if covered_ranges.last().unwrap().end() < &max_coord {
+            return tuning(covered_ranges.last().unwrap().end() + 1, y);
+        }
+
+        // look at the gaps between ranges
+        let mut prev: Option<RangeInclusive<isize>> = None; 
+        for range in covered_ranges {
+            if let Some(prev_range) = prev {
+                // if there's a gap between the end of prev and the start of this
+                if range.start() - prev_range.end() > 1 {
+                    let x = prev_range.end() + 1;
+                    return tuning(x,y);
+                }
+            }
+
+            prev = Some(range);
+        }
+    }
+    
+    dbg!("Gap not found?");
+    unreachable!()
 }
 
 #[cfg(test)]
@@ -197,7 +229,7 @@ Sensor at x=20, y=1: closest beacon is at x=15, y=3
     #[test]
     fn test_part2_example() {
         let input = super::input_generator(TEST_INPUT).unwrap();
-        let result = super::solve_part2(&input);
+        let result = super::solve_part2_inner(&input, 20);
 
         assert_eq!(result, 56000011);
     }

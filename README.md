@@ -18,3 +18,4 @@ Day | Theme | Notes
 12  |Elevation map| Breadth First Search, Generics with Trait Bounds (`where` expression)
 13  |"Packet" Comparison| recursion, the functional programming thing where you handle the head and pass on the rest, `@` syntax
 14  |Sand| `loop`
+15  |Beacon Exclusion Zone| `RangeInclusive`, Manhattan Distance
