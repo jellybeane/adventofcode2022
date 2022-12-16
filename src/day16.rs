@@ -9,9 +9,9 @@ use anyhow::Result;
 // the map of valve indices to flow rates,
 // map of valve names to valve indices,
 // and the graph of tunnel connections
-type Data = (HashMap<NodeIndex,u32>,
+type Data = (HashMap<NodeIndex,usize>,
              HashMap<String,NodeIndex>,
-            Graph<u32, u32, Undirected>);
+            Graph<usize, usize, Undirected>);
 
 // Format is 
 // Valve AA has flow rate=0; tunnels lead to valves DD, II, BB
@@ -25,7 +25,7 @@ fn input_generator_inner(input: &str) -> Result<Data> {
     // map of valve names to graph indices
     let mut valve_name_map = HashMap::new();
     // the actual graph
-    let mut graph: Graph<u32,u32,Undirected> = Graph::new_undirected();
+    let mut graph: Graph<usize,usize,Undirected> = Graph::new_undirected();
     // name of one node to another node
     let mut edges = vec![];
     for line in input.lines() {
@@ -35,7 +35,7 @@ fn input_generator_inner(input: &str) -> Result<Data> {
         let (valve_str, flow_rate_str) = valve_str.split_once(" has flow rate=").unwrap();
         let (_, valve_str) = valve_str.split_once(" ").unwrap();
         let valve_str = valve_str.to_string();
-        let flow_rate:u32 = flow_rate_str.parse()?;
+        let flow_rate:usize = flow_rate_str.parse()?;
 
         let node_index = graph.add_node(flow_rate);
         rate_map.insert(node_index, flow_rate);
@@ -66,51 +66,56 @@ fn input_generator_inner(input: &str) -> Result<Data> {
 }
 
 // brute force DFS: it's too late for smarts
+// seems to be working on paths up to len 20-ish but too slow for longer
 // returns the highest pressure it saw in paths of length 30
-fn dfs(g: &Graph<u32, u32, Undirected>, 
+fn dfs(g: &Graph<usize, usize, Undirected>, 
     cur_node:NodeIndex, cur_path:&mut Vec<NodeIndex>, 
-    indices_to_pressures:&HashMap<NodeIndex,u32>, total_pressure:u32, opened_on_prev_step:bool) // this feels bad ._.
-    -> u32
+    indices_to_rates:&HashMap<NodeIndex,usize>, total_rate:usize, cumulative_pressure:usize, opened_on_prev_step:bool) // this feels bad ._.
+    -> usize
 {
+    // want total pressure by minute 30
+    let maxlen = 25;
+
     // did we open a valve last node?
-    let mut updated_pressure = total_pressure;
+    let mut updated_rate = total_rate;
+    let mut updated_pressure = cumulative_pressure;
     if opened_on_prev_step {
         let prev_node = cur_path.last().unwrap();
-        // EDIT: I have misunderstood the question
-        // We are given flow rates
-        // Pressures are flow rates * time the valves are open
-        // It's even worse than I thought o_o
-        updated_pressure += indices_to_pressures.get(prev_node).unwrap();
+        updated_rate += indices_to_rates.get(prev_node).unwrap();
     }
+
+    // the max if all valves are open
+    let max_rate: usize = indices_to_rates.values().sum();
+    // if we've hit max rates, no point in continuing down
+    // return with the pressure that would accumulate in the remaining time
+    if updated_rate == max_rate {
+        let remaining = maxlen - cur_path.len();
+        updated_pressure += max_rate * remaining;
+        return updated_pressure;
+    }
+
+    // otherwise, increment by one timestep and continue on
+    updated_pressure += updated_rate;
 
     // is this the first time we encounter this valve?
     let opened_this_step = !cur_path.contains(&cur_node);
 
     // update the path
     cur_path.push(cur_node);
-    // want total pressure by minute 30
-    if cur_path.len() >= 30 {
-        assert!(cur_path.len() == 30);//should never get past 30???
+    if cur_path.len() >= maxlen {
+        assert!(cur_path.len() == maxlen);//should never get past 30???
         cur_path.pop();
         return updated_pressure;
     }
-
-    // the max if all valves are open
-    let max_possible: u32 = indices_to_pressures.values().sum();
-    assert!(updated_pressure <= max_possible);
 
     // continue down the path
     let mut max_seen = updated_pressure;
     for neighbor in g.neighbors(cur_node)
     {
         let p = dfs(g, neighbor, cur_path, 
-            indices_to_pressures, updated_pressure, opened_this_step);
-        assert!(updated_pressure <= max_possible);  
+            indices_to_rates, 
+            updated_rate, updated_pressure, opened_this_step);
         max_seen = max(max_seen, p);
-        if max_seen == max_possible {
-            dbg!(max_seen, max_possible);
-            break;
-        }
     }
  
     // reset this node before returning
@@ -123,25 +128,25 @@ fn dfs(g: &Graph<u32, u32, Undirected>,
 // Can only open valves you are at
 // What is the most pressure you can release in 30 minutes?
 #[aoc(day16, part1)]
-pub fn solve_part1(input: &Data) -> u32 {
+pub fn solve_part1(input: &Data) -> usize {
     solve_part1_inner(input)
 }
-fn solve_part1_inner(input: &Data) -> u32 {
+fn solve_part1_inner(input: &Data) -> usize {
     let (rate_map, valve_name_map, tunnels) = input.clone();
 
-    dbg!(&rate_map);
+    //dbg!(&rate_map);
 
     // start at valve AA
     let &cur_node = valve_name_map.get("AA").unwrap();
     let mut cur_path = vec![];
-    dfs(&tunnels, cur_node, &mut cur_path, &rate_map, 0, false)
+    dfs(&tunnels, cur_node, &mut cur_path, &rate_map, 0, 0, false)
 }
 
 #[aoc(day16, part2)]
-pub fn solve_part2(input: &Data) -> u32 {
+pub fn solve_part2(input: &Data) -> usize {
     solve_part2_inner(input)
 }
-fn solve_part2_inner(input: &Data) -> u32 {
+fn solve_part2_inner(input: &Data) -> usize {
     unimplemented!()
 }
 

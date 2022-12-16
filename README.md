@@ -19,3 +19,4 @@ Day | Theme | Notes
 13  |"Packet" Comparison| recursion, the functional programming thing where you handle the head and pass on the rest, `@` syntax
 14  |Sand| `loop`
 15  |Beacon Exclusion Zone| `RangeInclusive`, Manhattan Distance
+16  |Valve Network| `petgraph`, Depth First Search
