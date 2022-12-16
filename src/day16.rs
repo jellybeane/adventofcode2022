@@ -65,23 +65,28 @@ fn input_generator_inner(input: &str) -> Result<Data> {
     Ok((rate_map, valve_name_map, graph))
 }
 
-// brute force DFS: it's too late for smarts
-// seems to be working on paths up to len 20-ish but too slow for longer
-// returns the highest pressure it saw in paths of length 30
+// brute force DFS
+// returns the highest pressure it saw in 30 steps
 fn dfs(g: &Graph<usize, usize, Undirected>, 
-    cur_node:NodeIndex, cur_path:&mut Vec<NodeIndex>, 
-    indices_to_rates:&HashMap<NodeIndex,usize>, total_rate:usize, cumulative_pressure:usize, opened_on_prev_step:bool) // this feels bad ._.
+    cur_node:NodeIndex, cur_path:&mut Vec<NodeIndex>, cur_step:usize, opened_on_prev_step:bool,
+    indices_to_rates:&HashMap<NodeIndex,usize>, total_rate:usize, cumulative_pressure:usize) // this feels bad ._.
     -> usize
 {
     // want total pressure by minute 30
-    let maxlen = 25;
+    let maxlen = 30;
 
     // did we open a valve last node?
     let mut updated_rate = total_rate;
     let mut updated_pressure = cumulative_pressure;
+    let prev_node = if cur_path.len() > 0 {
+        Some(*(cur_path.last().unwrap()))
+    }
+    else {
+        None
+    };
     if opened_on_prev_step {
-        let prev_node = cur_path.last().unwrap();
-        updated_rate += indices_to_rates.get(prev_node).unwrap();
+        dbg!(&cur_path);
+        updated_rate += indices_to_rates.get(&prev_node.unwrap()).unwrap();
     }
 
     // the max if all valves are open
@@ -89,7 +94,7 @@ fn dfs(g: &Graph<usize, usize, Undirected>,
     // if we've hit max rates, no point in continuing down
     // return with the pressure that would accumulate in the remaining time
     if updated_rate == max_rate {
-        let remaining = maxlen - cur_path.len();
+        let remaining = maxlen - cur_step;
         updated_pressure += max_rate * remaining;
         return updated_pressure;
     }
@@ -98,24 +103,32 @@ fn dfs(g: &Graph<usize, usize, Undirected>,
     updated_pressure += updated_rate;
 
     // is this the first time we encounter this valve?
-    let opened_this_step = !cur_path.contains(&cur_node);
-
-    // update the path
-    cur_path.push(cur_node);
-    if cur_path.len() >= maxlen {
-        assert!(cur_path.len() == maxlen);//should never get past 30???
-        cur_path.pop();
+    let mut updated_step = cur_step + 1;
+    let opened_this_step = if !cur_path.contains(&cur_node) {
+        updated_rate += indices_to_rates.get(&cur_node).unwrap();
+        updated_step += 1;
+        true
+    }
+    else {
+        false
+    };
+    
+    if updated_step > maxlen {
         return updated_pressure;
     }
 
     // continue down the path
+    cur_path.push(cur_node);
     let mut max_seen = updated_pressure;
     for neighbor in g.neighbors(cur_node)
     {
-        let p = dfs(g, neighbor, cur_path, 
-            indices_to_rates, 
-            updated_rate, updated_pressure, opened_this_step);
-        max_seen = max(max_seen, p);
+        // the best path probably only backtracks at dead ends
+        if Some(neighbor) != prev_node || g.neighbors(cur_node).count() == 1 {
+            let p = dfs(g, neighbor, cur_path, updated_step, opened_this_step,
+                indices_to_rates, 
+                updated_rate, updated_pressure, );
+            max_seen = max(max_seen, p);
+        }
     }
  
     // reset this node before returning
@@ -139,7 +152,8 @@ fn solve_part1_inner(input: &Data) -> usize {
     // start at valve AA
     let &cur_node = valve_name_map.get("AA").unwrap();
     let mut cur_path = vec![];
-    dfs(&tunnels, cur_node, &mut cur_path, &rate_map, 0, 0, false)
+    dfs(&tunnels, cur_node, &mut cur_path, 0, false,
+        &rate_map, 0, 0)
 }
 
 #[aoc(day16, part2)]
