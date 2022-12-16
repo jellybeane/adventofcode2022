@@ -68,73 +68,65 @@ fn input_generator_inner(input: &str) -> Result<Data> {
 // brute force DFS
 // returns the highest pressure it saw in 30 steps
 fn dfs(g: &Graph<usize, usize, Undirected>, 
-    cur_node:NodeIndex, cur_path:&mut Vec<NodeIndex>, cur_step:usize, opened_on_prev_step:bool,
+    cur_node:NodeIndex, cur_path:&mut Vec<NodeIndex>, cur_step:usize,
     indices_to_rates:&HashMap<NodeIndex,usize>, total_rate:usize, cumulative_pressure:usize) // this feels bad ._.
     -> usize
 {
     // want total pressure by minute 30
     let maxlen = 30;
-
-    // did we open a valve last node?
-    let mut updated_rate = total_rate;
-    let mut updated_pressure = cumulative_pressure;
-    let prev_node = if cur_path.len() > 0 {
-        Some(*(cur_path.last().unwrap()))
-    }
-    else {
-        None
-    };
-    if opened_on_prev_step {
-        dbg!(&cur_path);
-        updated_rate += indices_to_rates.get(&prev_node.unwrap()).unwrap();
+    if cur_step >= 30 {
+        dbg!(cumulative_pressure);
+        return cumulative_pressure;
     }
 
     // the max if all valves are open
     let max_rate: usize = indices_to_rates.values().sum();
     // if we've hit max rates, no point in continuing down
     // return with the pressure that would accumulate in the remaining time
-    if updated_rate == max_rate {
+    if total_rate == max_rate {
         let remaining = maxlen - cur_step;
-        updated_pressure += max_rate * remaining;
-        return updated_pressure;
-    }
-
-    // otherwise, increment by one timestep and continue on
-    updated_pressure += updated_rate;
-
-    // is this the first time we encounter this valve?
-    let mut updated_step = cur_step + 1;
-    let opened_this_step = if !cur_path.contains(&cur_node) {
-        updated_rate += indices_to_rates.get(&cur_node).unwrap();
-        updated_step += 1;
-        true
-    }
-    else {
-        false
-    };
-    
-    if updated_step > maxlen {
+        let updated_pressure = cumulative_pressure + (max_rate * remaining);
+        dbg!(remaining, cumulative_pressure, updated_pressure);
         return updated_pressure;
     }
 
     // continue down the path
     cur_path.push(cur_node);
-    let mut max_seen = updated_pressure;
-    for neighbor in g.neighbors(cur_node)
-    {
-        // the best path probably only backtracks at dead ends
-        if Some(neighbor) != prev_node || g.neighbors(cur_node).count() == 1 {
-            let p = dfs(g, neighbor, cur_path, updated_step, opened_this_step,
-                indices_to_rates, 
-                updated_rate, updated_pressure, );
-            max_seen = max(max_seen, p);
+    // two actions we can take: open valve or move
+    // open valve the first time it is seen
+    let mut max_seen = cumulative_pressure;
+    if !cur_path.contains(&cur_node) {
+        let &my_rate = indices_to_rates.get(&cur_node).unwrap();
+        max_seen = dfs(g, cur_node, cur_path, cur_step+1, 
+            indices_to_rates, 
+            total_rate + my_rate, total_rate + cumulative_pressure);
+    }
+    // move to neighbor
+    else {
+        // backtracking hack
+        let prev_node = if cur_path.len() > 0 {
+            Some(*(cur_path.last().unwrap()))
+        }
+        else {
+            None
+        };
+        for neighbor in g.neighbors(cur_node)
+        {
+            // the best path probably only backtracks at dead ends
+            if Some(neighbor) != prev_node || g.neighbors(cur_node).count() == 1 {
+                let p = dfs(g, neighbor, cur_path, cur_step + 1,
+                    indices_to_rates, 
+                    total_rate, total_rate + cumulative_pressure, );
+                max_seen = max(max_seen, p);
+            }
         }
     }
- 
+    
     // reset this node before returning
     cur_path.pop();
 
     max_seen
+
 }
 
 // Takes 1 minute to move through a tunnel
@@ -152,7 +144,7 @@ fn solve_part1_inner(input: &Data) -> usize {
     // start at valve AA
     let &cur_node = valve_name_map.get("AA").unwrap();
     let mut cur_path = vec![];
-    dfs(&tunnels, cur_node, &mut cur_path, 0, false,
+    dfs(&tunnels, cur_node, &mut cur_path, 0, 
         &rate_map, 0, 0)
 }
 
