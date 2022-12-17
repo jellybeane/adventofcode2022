@@ -74,8 +74,8 @@ fn dfs(g: &Graph<usize, usize, Undirected>,
 {
     // want total pressure by minute 30
     let maxlen = 30;
-    if cur_step >= 30 {
-        dbg!(cumulative_pressure);
+    if cur_step >= maxlen {
+        //dbg!(cumulative_pressure);
         return cumulative_pressure;
     }
 
@@ -86,24 +86,25 @@ fn dfs(g: &Graph<usize, usize, Undirected>,
     if total_rate == max_rate {
         let remaining = maxlen - cur_step;
         let updated_pressure = cumulative_pressure + (max_rate * remaining);
-        dbg!(remaining, cumulative_pressure, updated_pressure);
+        //dbg!(remaining, cumulative_pressure, updated_pressure);
         return updated_pressure;
     }
 
     // continue down the path
-    cur_path.push(cur_node);
     // two actions we can take: open valve or move
     // open valve the first time it is seen
     let mut max_seen = cumulative_pressure;
     if !cur_path.contains(&cur_node) {
         let &my_rate = indices_to_rates.get(&cur_node).unwrap();
+        cur_path.push(cur_node);
         max_seen = dfs(g, cur_node, cur_path, cur_step+1, 
             indices_to_rates, 
             total_rate + my_rate, total_rate + cumulative_pressure);
     }
     // move to neighbor
     else {
-        // backtracking hack
+        cur_path.push(cur_node);
+        // backtracking hack: the best path probably only backtracks at dead ends
         let prev_node = if cur_path.len() > 0 {
             Some(*(cur_path.last().unwrap()))
         }
@@ -112,7 +113,6 @@ fn dfs(g: &Graph<usize, usize, Undirected>,
         };
         for neighbor in g.neighbors(cur_node)
         {
-            // the best path probably only backtracks at dead ends
             if Some(neighbor) != prev_node || g.neighbors(cur_node).count() == 1 {
                 let p = dfs(g, neighbor, cur_path, cur_step + 1,
                     indices_to_rates, 
